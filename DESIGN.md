@@ -65,9 +65,9 @@ Subtle and purposeful only (`tw-animate-css` is available):
 
 ## Component inventory
 
-- **Existing `components/ui/*`**: `Button` (Base UI — default/outline/secondary/ghost/destructive/link, sizes xs→lg + icon), `Input`, `Label`, `Select` (trigger/items/content), `Card` (+Header/Title/Description/Action/Content/Footer), `Badge` (default/secondary/outline/ghost/link + status variants `success`/`pending`/`destructive`), `Skeleton`, `ThemeProvider` (next-themes), `cn` from `src/lib/utils.ts`.
-- **Still to build as `components/ui/*`** (shadcn `base-nova` / Base UI — add via `npx shadcn@latest add <name>`): dialog, avatar, separator, textarea, tabs.
-- **Feature components (`components/`)**: page-container, empty-state, error-state, skeleton-card; then navbar, hero, trust-strip, product-card, category-pills, dashboard-shell (sidebar), stat-card, plan-card.
+- **Existing `components/ui/*`**: `Button` (Base UI — default/outline/secondary/ghost/destructive/link, sizes xs→lg + icon), `Input`, `Label`, `Select` (trigger/items/content), `Card` (+Header/Title/Description/Action/Content/Footer), `Badge` (default/secondary/outline/ghost/link + status variants `success`/`pending`/`destructive`), `Skeleton`, `Avatar`, `DropdownMenu`, `Sheet` (mobile nav), `ThemeProvider` (next-themes), `cn` from `src/lib/utils.ts`.
+- **Still to build as `components/ui/*`** (shadcn `base-nova` / Base UI — add via `npx shadcn@latest add <name>`): dialog, separator, textarea, tabs.
+- **Feature components (`components/`)**: page-container, empty-state, error-state, skeleton-card, site-logo, navbar (sticky header + mobile sheet + auth/profile slot), footer (ink surface), profile-menu; then hero, trust-strip, product-card, category-pills, dashboard-shell (sidebar), stat-card, plan-card.
 
 ## Rules for every page
 
