@@ -5,6 +5,7 @@ import {
   CircleUser,
   LayoutDashboard,
   LogOut,
+  Package,
   UtensilsCrossed,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -74,6 +75,12 @@ function ProfileMenu({ user, onSignOut }: ProfileMenuProps) {
             <UtensilsCrossed aria-hidden="true" />
             Browse Menu
           </DropdownMenuItem>
+          {user.role === "customer" ? (
+            <DropdownMenuItem render={<Link href="/orders" />}>
+              <Package aria-hidden="true" />
+              My Orders
+            </DropdownMenuItem>
+          ) : null}
           {dashboardHref && dashboardLabel ? (
             <DropdownMenuItem render={<Link href={dashboardHref} />}>
               <LayoutDashboard aria-hidden="true" />

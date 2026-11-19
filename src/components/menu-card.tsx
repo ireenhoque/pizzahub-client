@@ -1,8 +1,8 @@
-import { MapPin, Store } from "lucide-react"
+import { MapPin, Plus, Store } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { cn } from "cn"
-import { buttonVariants } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/format"
@@ -18,13 +18,21 @@ type MenuCardProps = {
    * `/menu?item=<id>`, which the menu page also understands.
    */
   onSelect?: (item: MenuItem) => void
+  /** Adds the item to the cart; hidden where a cart is not available. */
+  onAddToCart?: (item: MenuItem) => void
 }
 
 // Reusable menu item card — fixed 4:3 media block plus a flexible body, so a
 // grid row keeps equal image ratios and equal card heights (the action pins
 // to the bottom with mt-auto). Vendor shows the name once the API exposes
 // it, falling back to a compact reference to the real vendorId.
-function MenuCard({ item, style, className, onSelect }: MenuCardProps) {
+function MenuCard({
+  item,
+  style,
+  className,
+  onSelect,
+  onAddToCart,
+}: MenuCardProps) {
   const vendor = item.vendorName ?? `#${item.vendorId.slice(0, 8)}`
 
   return (
@@ -80,23 +88,37 @@ function MenuCard({ item, style, className, onSelect }: MenuCardProps) {
           </span>
         </div>
 
-        <Link
-          href={`/menu?item=${item.id}`}
-          onClick={
-            onSelect
-              ? (event) => {
-                  event.preventDefault()
-                  onSelect(item)
-                }
-              : undefined
-          }
-          className={cn(
-            buttonVariants({ variant: "outline" }),
-            "mt-auto w-full hover:border-transparent hover:bg-primary hover:text-primary-foreground"
-          )}
-        >
-          View Details
-        </Link>
+        <div className="mt-auto flex gap-2">
+          <Link
+            href={`/menu?item=${item.id}`}
+            onClick={
+              onSelect
+                ? (event) => {
+                    event.preventDefault()
+                    onSelect(item)
+                  }
+                : undefined
+            }
+            className={cn(
+              buttonVariants({ variant: "outline" }),
+              "flex-1 hover:border-transparent hover:bg-primary hover:text-primary-foreground"
+            )}
+          >
+            View Details
+          </Link>
+          {onAddToCart ? (
+            <Button
+              type="button"
+              size="sm"
+              aria-label={`Add ${item.name} to cart`}
+              onClick={() => onAddToCart(item)}
+              className="shrink-0"
+            >
+              <Plus aria-hidden="true" />
+              Add
+            </Button>
+          ) : null}
+        </div>
       </div>
     </Card>
   )

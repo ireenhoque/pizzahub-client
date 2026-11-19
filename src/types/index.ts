@@ -105,3 +105,70 @@ export type ProfileUser = {
   role: UserRole
   isBlocked: boolean
 }
+
+/** Order lifecycle — mirrors `ORDER_STATUSES` in pizzahub-server. */
+export const ORDER_STATUSES = [
+  "cart",
+  "placed",
+  "preparing",
+  "ready",
+  "out_for_delivery",
+  "delivered",
+  "cancelled",
+] as const
+
+export type OrderStatus = (typeof ORDER_STATUSES)[number]
+
+/** Price/name snapshot taken when the order was created. */
+export type OrderLineItem = {
+  menuItemId: string
+  name: string
+  unitPrice: number
+  quantity: number
+}
+
+/**
+ * Order from the Express API. Mongo ObjectIds arrive as strings in JSON and
+ * the order controller does not remap `_id` to `id` (unlike menu items).
+ */
+export type Order = {
+  _id: string
+  customerId: string
+  vendorId: string
+  lineItems: OrderLineItem[]
+  status: OrderStatus
+  subtotal: number
+  deliveryFee: number
+  totalAmount: number
+  currency: string
+  deliveryAddress: string
+  contactPhone?: string
+  notes?: string
+  placedAt?: string
+  deliveredAt?: string
+  cancelledAt?: string
+  cancellationReason?: string
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * Body accepted by `POST /api/orders`. There is deliberately no currency
+ * field: the server derives it from the menu items it fetches.
+ */
+export type CreateOrderInput = {
+  lineItems: Array<{ menuItemId: string; quantity: number }>
+  deliveryAddress: string
+  contactPhone?: string
+  notes?: string
+}
+
+export type CreateOrderResponse = ApiEnvelope<{ order: Order }>
+
+/** `data` of `GET /api/orders/my` — keyed by `orders`, not `items`. */
+export type CustomerOrdersResponse = ApiEnvelope<{
+  orders: Order[]
+  pagination: PaginationMeta
+}>
+
+export type OrderDetailResponse = ApiEnvelope<{ order: Order }>

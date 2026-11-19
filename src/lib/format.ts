@@ -1,5 +1,8 @@
 // Shared formatting helpers — locale-aware via Intl, no hardcoded data.
 
+/** Mirrors `MENU_ITEM_CURRENCY` in pizzahub-server; all menu prices are BDT. */
+export const MENU_CURRENCY = "BDT" as const
+
 export function formatCurrency(
   amount: number,
   currency = "USD",

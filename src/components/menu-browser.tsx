@@ -6,12 +6,14 @@ import {
   ChevronRight,
   RotateCcw,
   Search,
+  ShoppingCart,
   SlidersHorizontal,
   Star,
 } from "lucide-react"
 import Image from "next/image"
 import { useEffect, useMemo, useState } from "react"
 import { cn } from "cn"
+import { useCart } from "@/components/cart-provider"
 import { EmptyState } from "@/components/empty-state"
 import { ErrorState } from "@/components/error-state"
 import { MenuCard } from "@/components/menu-card"
@@ -98,6 +100,7 @@ function validatePriceRange(minInput: string, maxInput: string): string | null {
 // whitelisted query param on GET /api/menu-items. The Express API remains the
 // source of truth for which items are public, active, and in stock.
 function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
+  const { addItem } = useCart()
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [category, setCategory] = useState<MenuItemCategory | "all">(
@@ -432,6 +435,7 @@ function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
                 key={item.id}
                 item={item}
                 onSelect={(selected) => setActiveItemId(selected.id)}
+                onAddToCart={addItem}
               />
             ))}
           </div>
@@ -602,6 +606,10 @@ function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
                   </div>
                 </dl>
 
+                <Button className="w-full" onClick={() => addItem(detailItem)}>
+                  <ShoppingCart aria-hidden="true" />
+                  Add to cart
+                </Button>
                 <Button
                   variant="outline"
                   className="w-full"

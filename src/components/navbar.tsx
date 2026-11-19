@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu } from "lucide-react"
+import { Menu, ShoppingCart } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
+import { useCart } from "@/components/cart-provider"
 import { PageContainer } from "@/components/page-container"
 import { ProfileMenu } from "@/components/profile-menu"
 import { SiteLogo } from "@/components/site-logo"
@@ -21,6 +22,8 @@ import { cn } from "cn"
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/menu", label: "Browse Menu" },
+  { href: "/cart", label: "Cart" },
+  { href: "/orders", label: "My Orders" },
 ] as const
 
 function isActiveLink(pathname: string, href: string) {
@@ -32,6 +35,7 @@ function isActiveLink(pathname: string, href: string) {
 function Navbar() {
   const pathname = usePathname()
   const { user, isPending, signOut } = useAuth()
+  const { itemCount } = useCart()
 
   const dashboardHref = user ? dashboardPathForRole(user.role) : null
   const dashboardLabel = user ? dashboardLabelForRole(user.role) : null
@@ -66,6 +70,22 @@ function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <Link
+            href="/cart"
+            aria-label={`Your cart, ${itemCount} ${itemCount === 1 ? "item" : "items"}`}
+            className={cn(
+              buttonVariants({ variant: "ghost", size: "icon" }),
+              "relative size-10"
+            )}
+          >
+            <ShoppingCart aria-hidden="true" />
+            {itemCount > 0 ? (
+              <span className="absolute top-0.5 right-0.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                {itemCount > 99 ? "99+" : itemCount}
+              </span>
+            ) : null}
+          </Link>
+
           {isPending ? (
             <span
               aria-hidden="true"
