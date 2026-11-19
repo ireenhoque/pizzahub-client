@@ -65,3 +65,40 @@ export const MENU_CATEGORY_FACETS: MenuCategoryFacet[] = [
     apiCategories: ["drinks", "desserts"],
   },
 ]
+
+/** Values accepted by the Express `?category=` query — one per API enum. */
+export const MENU_CATEGORY_VALUES: MenuItemCategory[] = [
+  "pizza",
+  "sides",
+  "drinks",
+  "desserts",
+  "combos",
+]
+
+/** Short labels for the API category values used in storefront filter pills. */
+export const MENU_CATEGORY_LABELS: Record<MenuItemCategory, string> = {
+  pizza: "Pizza",
+  sides: "Sides",
+  drinks: "Drinks",
+  desserts: "Desserts",
+  combos: "Combos",
+}
+
+/**
+ * Translates a homepage facet slug (or a direct API value) into the single
+ * category the Express list endpoint accepts. Facets that span multiple API
+ * categories fall back to their first value because the API takes one category.
+ */
+export function menuCategoryFromSlug(
+  slug?: string | string[] | null
+): MenuItemCategory | null {
+  const value = Array.isArray(slug) ? slug[0] : slug
+  if (!value) return null
+
+  const facet = MENU_CATEGORY_FACETS.find((entry) => entry.slug === value)
+  if (facet) return facet.apiCategories[0] ?? null
+
+  return MENU_CATEGORY_VALUES.includes(value as MenuItemCategory)
+    ? (value as MenuItemCategory)
+    : null
+}

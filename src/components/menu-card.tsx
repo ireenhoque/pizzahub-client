@@ -13,13 +13,18 @@ type MenuCardProps = {
   /** Entrance style from `lib/motion` — optional so the card works anywhere. */
   style?: React.CSSProperties
   className?: string
+  /**
+   * Opens details in place when provided. Without it the link deep-links to
+   * `/menu?item=<id>`, which the menu page also understands.
+   */
+  onSelect?: (item: MenuItem) => void
 }
 
 // Reusable menu item card — fixed 4:3 media block plus a flexible body, so a
 // grid row keeps equal image ratios and equal card heights (the action pins
 // to the bottom with mt-auto). Vendor shows the name once the API exposes
 // it, falling back to a compact reference to the real vendorId.
-function MenuCard({ item, style, className }: MenuCardProps) {
+function MenuCard({ item, style, className, onSelect }: MenuCardProps) {
   const vendor = item.vendorName ?? `#${item.vendorId.slice(0, 8)}`
 
   return (
@@ -77,6 +82,14 @@ function MenuCard({ item, style, className }: MenuCardProps) {
 
         <Link
           href={`/menu?item=${item.id}`}
+          onClick={
+            onSelect
+              ? (event) => {
+                  event.preventDefault()
+                  onSelect(item)
+                }
+              : undefined
+          }
           className={cn(
             buttonVariants({ variant: "outline" }),
             "mt-auto w-full hover:border-transparent hover:bg-primary hover:text-primary-foreground"

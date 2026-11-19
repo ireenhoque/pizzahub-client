@@ -77,6 +77,18 @@ export type MenuItem = {
 /** Response of `GET /api/menu-items`. */
 export type MenuItemListResponse = ApiEnvelope<Paginated<MenuItem>>
 
+/** Sortable fields accepted by `GET /api/menu-items`. */
+export type MenuItemSortField = "price" | "ratingAvg" | "createdAt"
+
+/** Sort directions accepted by `GET /api/menu-items`. */
+export type MenuItemSortOrder = "asc" | "desc"
+
+/**
+ * Response of `GET /api/menu-items/:id`.
+ * The server nests the item under `data.menuItem` (unlike the list response).
+ */
+export type MenuItemDetailResponse = ApiEnvelope<{ menuItem: MenuItem }>
+
 /**
  * Signed-in account rendered in the navbar/profile menu.
  *

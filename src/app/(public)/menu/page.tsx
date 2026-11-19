@@ -1,25 +1,25 @@
 import type { Metadata } from "next"
-import { PageContainer } from "@/components/page-container"
+import { MenuBrowser } from "@/components/menu-browser"
+import { menuCategoryFromSlug } from "@/lib/menu-categories"
 
 export const metadata: Metadata = {
   title: "Browse Menu",
 }
 
-// Placeholder route — browse bar, category pills, and the product grid
-// come in a later iteration. Exists so navbar/footer links resolve.
-export default function MenuPage() {
+type MenuPageProps = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+// The server translates homepage facet slugs into the single API category and
+// forwards the existing `?item=<id>` deep link; all live filtering happens in
+// the client browser component against the Express API.
+export default async function MenuPage({ searchParams }: MenuPageProps) {
+  const params = await searchParams
+  const category = menuCategoryFromSlug(params.category)
+  const itemParam = params.item
+  const itemId = Array.isArray(itemParam) ? itemParam[0] : itemParam
+
   return (
-    <PageContainer className="flex flex-col gap-4 py-16 md:py-24">
-      <p className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">
-        Browse menu
-      </p>
-      <h1 className="max-w-2xl font-heading text-4xl font-extrabold tracking-tight md:text-5xl">
-        Every pizzeria, <span className="text-primary">one menu away.</span>
-      </h1>
-      <p className="max-w-prose text-base text-muted-foreground">
-        Menu browsing is under construction — pizzas, sides, and drinks from
-        neighborhood pizzerias will live here.
-      </p>
-    </PageContainer>
+    <MenuBrowser initialCategory={category} initialItemId={itemId ?? null} />
   )
 }
