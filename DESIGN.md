@@ -31,10 +31,10 @@ All tokens live as oklch CSS variables in `src/app/globals.css` (light in `:root
 
 ## Layout & spacing
 
-- Page canvas: cream `background`. Content max-width `max-w-6xl` (storefront) / `max-w-7xl` (dashboards), horizontal padding `px-4 sm:px-6 lg:px-8`.
-- Vertical rhythm in multiples of 4; sections separated by `py-12 md:py-16`.
+- Page canvas: cream `background`. Content max-width `max-w-6xl` (storefront) / `max-w-7xl` (dashboards), horizontal padding `px-4 sm:px-6 lg:px-8` — wrap every page in `<PageContainer>` (`size="wide"` for dashboards).
+- Spacing conventions: vertical rhythm in multiples of 4 (Tailwind's 4px scale) — `gap-3` inside cards/list rows, `gap-6` between blocks, sections `py-12 md:py-16`.
 - Radii: cards/modals `rounded-xl`–`rounded-2xl`, chips/pills `rounded-full`, buttons use the token scale (`--radius: 0.75rem`).
-- Borders are 1px warm hairlines; elevation comes from the cream canvas + subtle shadows (`shadow-sm` on hover, `shadow-lg` on modals) — not heavy drop shadows.
+- Borders are 1px warm hairlines; elevation comes from the cream canvas + warm shadow tokens (`shadow-card` at rest, `shadow-lift` on hover, `shadow-lg` on modals) — not heavy drop shadows.
 
 ## Core patterns (original recipes)
 
@@ -65,9 +65,9 @@ Subtle and purposeful only (`tw-animate-css` is available):
 
 ## Component inventory
 
-- **Existing**: `Button` (Base UI — variants default/outline/secondary/ghost/destructive/link), `ThemeProvider` (next-themes), `cn` from `src/lib/utils.ts`.
-- **To build as `components/ui/*`** (shadcn `base-nova` / Base UI — add via `npx shadcn@latest add <name>`): input, select, badge (status pill), card, dialog, avatar, separator, textarea, label, tabs.
-- **Feature components (`components/`)**: navbar, hero, trust-strip, product-card, category-pills, dashboard-shell (sidebar), stat-card, plan-card.
+- **Existing `components/ui/*`**: `Button` (Base UI — default/outline/secondary/ghost/destructive/link, sizes xs→lg + icon), `Input`, `Label`, `Select` (trigger/items/content), `Card` (+Header/Title/Description/Action/Content/Footer), `Badge` (default/secondary/outline/ghost/link + status variants `success`/`pending`/`destructive`), `Skeleton`, `ThemeProvider` (next-themes), `cn` from `src/lib/utils.ts`.
+- **Still to build as `components/ui/*`** (shadcn `base-nova` / Base UI — add via `npx shadcn@latest add <name>`): dialog, avatar, separator, textarea, tabs.
+- **Feature components (`components/`)**: page-container, empty-state, error-state, skeleton-card; then navbar, hero, trust-strip, product-card, category-pills, dashboard-shell (sidebar), stat-card, plan-card.
 
 ## Rules for every page
 

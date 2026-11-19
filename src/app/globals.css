@@ -49,6 +49,12 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@theme {
+    /* Elevation — warm ink-tinted shadows, deliberately subtle (flat cards by design). */
+    --shadow-card: 0 1px 2px 0 rgb(36 33 31 / 0.04), 0 2px 4px -2px rgb(36 33 31 / 0.06);
+    --shadow-lift: 0 4px 12px -4px rgb(36 33 31 / 0.12), 0 8px 24px -8px rgb(36 33 31 / 0.08);
+}
+
 :root {
     color-scheme: light;
     /* PizzaHub brand palette — see DESIGN.md. Warm, cream-based editorial scheme. */
