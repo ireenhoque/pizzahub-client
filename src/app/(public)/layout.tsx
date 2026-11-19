@@ -2,7 +2,7 @@ import { Footer } from "@/components/footer"
 import { Navbar } from "@/components/navbar"
 
 // Public storefront shell — sticky navbar + footer around every public route.
-// Pass `user` to <Navbar> once authentication exists to reveal the profile dropdown.
+// <Navbar> reads the Better Auth session from the app-wide auth provider.
 
 export default function PublicLayout({
   children,

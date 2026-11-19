@@ -5,6 +5,22 @@ import type { ApiErrorBody } from "@/types"
 // timeouts, and error normalization. Works in server and client components
 // (it reads no secrets; server-only credentials would live elsewhere).
 
+/**
+ * In-memory access-token getter registered by the client auth provider.
+ *
+ * The short-lived Better Auth JWT lives in React state/refs — never in
+ * `localStorage` or any other web storage. The Express API is the
+ * authorization authority and re-checks the user in MongoDB on every request.
+ */
+let accessTokenGetter: (() => string | null) | undefined
+
+/** Registers (or clears) the getter used to attach `Authorization: Bearer`. */
+export function setAccessTokenGetter(
+  getter: (() => string | null) | null
+): void {
+  accessTokenGetter = getter ?? undefined
+}
+
 export class ApiError extends Error {
   readonly status: number
   readonly statusText: string
@@ -57,6 +73,12 @@ export async function apiFetch<T>(
   const requestHeaders = new Headers(headers)
   requestHeaders.set("Accept", "application/json")
   if (body !== undefined) requestHeaders.set("Content-Type", "application/json")
+
+  // Attach the in-memory JWT when available; an explicit caller header wins.
+  const accessToken = accessTokenGetter?.()
+  if (accessToken && !requestHeaders.has("Authorization")) {
+    requestHeaders.set("Authorization", `Bearer ${accessToken}`)
+  }
 
   let response: Response
   try {

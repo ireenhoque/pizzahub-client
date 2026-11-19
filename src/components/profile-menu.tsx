@@ -1,22 +1,29 @@
 "use client"
 
 import Link from "next/link"
-import { CircleUser, LogOut, UtensilsCrossed } from "lucide-react"
+import {
+  CircleUser,
+  LayoutDashboard,
+  LogOut,
+  UtensilsCrossed,
+} from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { dashboardLabelForRole, dashboardPathForRole } from "@/lib/roles"
 import type { ProfileUser } from "@/types"
 
 type ProfileMenuProps = {
   user: ProfileUser
-  /** Future auth hook — until it is provided, "Sign out" renders disabled. */
-  onSignOut?: () => void
+  /** Wired to the auth provider; renders disabled when omitted. */
+  onSignOut?: () => void | Promise<void>
 }
 
 function initials(name: string) {
@@ -29,9 +36,13 @@ function initials(name: string) {
     .toUpperCase()
 }
 
-// Profile dropdown slot — visual shell for future authentication integration.
-// It only navigates today; sign-out is wired through props, never logic here.
+// Profile dropdown — session data and sign-out are supplied by <Navbar>.
+// Dashboard links are role-aware but purely navigational; the Express API
+// still authorizes every protected request against MongoDB.
 function ProfileMenu({ user, onSignOut }: ProfileMenuProps) {
+  const dashboardHref = dashboardPathForRole(user.role)
+  const dashboardLabel = dashboardLabelForRole(user.role)
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -46,30 +57,38 @@ function ProfileMenu({ user, onSignOut }: ProfileMenuProps) {
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-56">
-        <DropdownMenuLabel className="font-normal">
-          <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <CircleUser className="size-4 text-primary" aria-hidden="true" />
-            {user.name}
-          </span>
-          {user.email ? (
-            <span className="mt-0.5 block text-xs text-muted-foreground">
-              {user.email}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="font-normal">
+            <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <CircleUser className="size-4 text-primary" aria-hidden="true" />
+              {user.name}
             </span>
+            {user.email ? (
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {user.email}
+              </span>
+            ) : null}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem render={<Link href="/menu" />}>
+            <UtensilsCrossed aria-hidden="true" />
+            Browse Menu
+          </DropdownMenuItem>
+          {dashboardHref && dashboardLabel ? (
+            <DropdownMenuItem render={<Link href={dashboardHref} />}>
+              <LayoutDashboard aria-hidden="true" />
+              {dashboardLabel}
+            </DropdownMenuItem>
           ) : null}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem render={<Link href="/menu" />}>
-          <UtensilsCrossed aria-hidden="true" />
-          Browse Menu
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          variant="destructive"
-          disabled={!onSignOut}
-          onClick={onSignOut}
-        >
-          <LogOut aria-hidden="true" />
-          Sign out
-        </DropdownMenuItem>
+          <DropdownMenuItem
+            variant="destructive"
+            disabled={!onSignOut}
+            onClick={onSignOut}
+          >
+            <LogOut aria-hidden="true" />
+            Sign out
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   )

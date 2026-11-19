@@ -1,10 +1,23 @@
 // Shared cross-cutting types. Component/route-specific props stay next to
 // their components; only types used across modules live here.
 
+/** PizzaHub roles — mirrors `USER_ROLES` in pizzahub-server. */
+export const USER_ROLES = ["customer", "vendor", "admin"] as const
+
+export type UserRole = (typeof USER_ROLES)[number]
+
+/** One field-level validation issue from the Express error envelope. */
+export type ApiErrorDetail = {
+  field: string
+  message: string
+}
+
 /** Envelope APIs return on failure (parsed by `ApiError` in lib/api-client). */
 export type ApiErrorBody = {
   message?: string
   errors?: Record<string, string[]>
+  /** Zod validation issues — `[{ field, message }]` (see server validate.ts). */
+  details?: ApiErrorDetail[]
 }
 
 /** Standard success envelope used by every Express endpoint. */
@@ -64,9 +77,19 @@ export type MenuItem = {
 /** Response of `GET /api/menu-items`. */
 export type MenuItemListResponse = ApiEnvelope<Paginated<MenuItem>>
 
-/** Signed-in account rendered in the navbar profile dropdown (auth later). */
+/**
+ * Signed-in account rendered in the navbar/profile menu.
+ *
+ * `role` and `isBlocked` are owned by the server: Better Auth writes them from
+ * its configured defaults, and the Express API re-reads them from MongoDB on
+ * every protected request. The client uses them for navigation only — never
+ * for authorization.
+ */
 export type ProfileUser = {
+  id: string
   name: string
   email?: string
   avatarUrl?: string
+  role: UserRole
+  isBlocked: boolean
 }
