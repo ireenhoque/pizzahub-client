@@ -19,7 +19,7 @@ The `design-reference/*.jpeg` mockups are **inspiration only** — they are stud
 | Success | `#2F7D4F` | Approved / success pills |
 | Destructive | `#C2412E` | Rejected / blocked / delete actions |
 
-All tokens live as oklch CSS variables in `app/globals.css` (light in `:root`, warm dark in `.dark`). Use semantic utilities (`bg-primary`, `text-muted-foreground`, `border-border`, …) — never hardcode hex values in components.
+All tokens live as oklch CSS variables in `src/app/globals.css` (light in `:root`, warm dark in `.dark`). Use semantic utilities (`bg-primary`, `text-muted-foreground`, `border-border`, …) — never hardcode hex values in components.
 
 ## Typography
 
@@ -65,7 +65,7 @@ Subtle and purposeful only (`tw-animate-css` is available):
 
 ## Component inventory
 
-- **Existing**: `Button` (Base UI — variants default/outline/secondary/ghost/destructive/link), `ThemeProvider` (next-themes), `cn` from `lib/utils.ts`.
+- **Existing**: `Button` (Base UI — variants default/outline/secondary/ghost/destructive/link), `ThemeProvider` (next-themes), `cn` from `src/lib/utils.ts`.
 - **To build as `components/ui/*`** (shadcn `base-nova` / Base UI — add via `npx shadcn@latest add <name>`): input, select, badge (status pill), card, dialog, avatar, separator, textarea, label, tabs.
 - **Feature components (`components/`)**: navbar, hero, trust-strip, product-card, category-pills, dashboard-shell (sidebar), stat-card, plan-card.
 

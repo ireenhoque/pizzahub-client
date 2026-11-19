@@ -1,6 +1,6 @@
 # AGENTS.md — pizzahub-client
 
-Next.js 16 + React 19 client for a pizza-ordering platform. Currently a scaffolded template; expected features (per `design-reference/*.jpeg` mockups) include user storefront plus admin and vendor dashboards. No tests, no CI, no env vars yet.
+Next.js 16 + React 19 client for a pizza-ordering platform. Initialized with the App Router, TypeScript, and route groups (`(public)`, `(auth)`, `(dashboard)`); expected features (per `design-reference/*.jpeg` mockups) include user storefront plus admin and vendor dashboards. No tests, no CI; env vars are documented in `.env.example`.
 
 ## Commands
 
@@ -17,10 +17,11 @@ There is no test runner. Verify changes with `lint` → `typecheck` → `npm run
 ## Stack quirks
 
 - **Next 16 / React 19.3**: see the generated block below — check `node_modules/next/dist/docs/` before assuming old Next.js APIs.
-- **Tailwind v4**: no `tailwind.config.*`; theme tokens live as CSS variables in `app/globals.css`. Edit tokens there, not in a JS config.
-- **shadcn/ui with `style: "base-nova"`** (`components.json`): components are built on `@base-ui/react`, **not Radix** — don't import `@radix-ui/*` or copy Radix-based examples. Add components with `npx shadcn@latest add <name>`; they land in `components/ui/`. Icons come from `lucide-react`.
-- **Path alias**: `@/*` maps to the repo root (e.g. `@/components/ui/button`, `@/lib/utils`). There is no `src/` directory.
-- **Dark mode**: `next-themes` via `components/theme-provider.tsx`; `<html>` needs `suppressHydrationWarning`.
+- **Tailwind v4**: no `tailwind.config.*`; theme tokens live as CSS variables in `src/app/globals.css`. Edit tokens there, not in a JS config.
+- **shadcn/ui with `style: "base-nova"`** (`components.json`): components are built on `@base-ui/react`, **not Radix** — don't import `@radix-ui/*` or copy Radix-based examples. Add components with `npx shadcn@latest add <name>`; they land in `src/components/ui/`. Icons come from `lucide-react`.
+- **Path alias**: `@/*` maps to `src/` (e.g. `@/components/ui/button`, `@/lib/utils`). Application code lives under `src/`; `public/` and config files stay at the root.
+- **Route groups**: all routes share the root layout at `src/app/layout.tsx`; `(public)` = storefront, `(auth)` = sign-in/sign-up, `(dashboard)` = `/admin` and `/vendor`. Route-group pages are placeholders until the business pages are built.
+- **Dark mode**: `next-themes` via `src/components/theme-provider.tsx`; `<html>` needs `suppressHydrationWarning`.
 
 ## Code style (enforced by Prettier, `.prettierrc`)
 
@@ -29,7 +30,7 @@ There is no test runner. Verify changes with `lint` → `typecheck` → `npm run
 
 ## Notes
 
-- `DESIGN.md` is the design source of truth (brand tokens, typography, component recipes, motion/a11y rules). Read it before building any UI; brand palette and fonts are already wired in `app/globals.css` and `app/layout.tsx`.
+- `DESIGN.md` is the design source of truth (brand tokens, typography, component recipes, motion/a11y rules). Read it before building any UI; brand palette and fonts are already wired in `src/app/globals.css` and `src/app/layout.tsx`.
 - `design-reference/` is untracked and contains the UI mockups the app is meant to implement — inspiration only, per the rules in `DESIGN.md`.
 - `CLAUDE.md` just includes this file (`@AGENTS.md`); edit this file, not that one.
 

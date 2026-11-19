@@ -50,6 +50,7 @@
 }
 
 :root {
+    color-scheme: light;
     /* PizzaHub brand palette — see DESIGN.md. Warm, cream-based editorial scheme. */
     --background: oklch(0.982 0.014 74.4); /* #FFF8EF cream */
     --foreground: oklch(0.25 0.006 56.1); /* #24211F ink */
@@ -88,6 +89,7 @@
 }
 
 .dark {
+    color-scheme: dark;
     /* Warm dark mode — same hue family as light mode so both feel like PizzaHub. */
     --background: oklch(0.216 0.006 56); /* #1C1917 warm charcoal */
     --foreground: oklch(0.945 0.012 75.3); /* warm near-white */
