@@ -11,12 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-
-type ProfileUser = {
-  name: string
-  email?: string
-  avatarUrl?: string
-}
+import type { ProfileUser } from "@/types"
 
 type ProfileMenuProps = {
   user: ProfileUser

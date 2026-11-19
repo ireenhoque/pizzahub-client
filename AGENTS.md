@@ -31,6 +31,7 @@ There is no test runner. Verify changes with `lint` → `typecheck` → `npm run
 ## Notes
 
 - `DESIGN.md` is the design source of truth (brand tokens, typography, component recipes, motion/a11y rules). Read it before building any UI; brand palette and fonts are already wired in `src/app/globals.css` and `src/app/layout.tsx`.
+- Providers live in `src/components/providers.tsx`, mounted **once** by the root layout: next-themes + TanStack Query + Sonner. Data access goes through `src/lib/api-client.ts` (`apiFetch`/`api`), env vars through `src/lib/env.ts` (see `.env.example`), shared types through `src/types/`, formatters through `src/lib/format.ts`.
 - `design-reference/` is untracked and contains the UI mockups the app is meant to implement — inspiration only, per the rules in `DESIGN.md`.
 - `CLAUDE.md` just includes this file (`@AGENTS.md`); edit this file, not that one.
 

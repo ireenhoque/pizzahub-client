@@ -3,7 +3,7 @@ import { Inter, Manrope } from "next/font/google"
 
 import "./globals.css"
 
-import { ThemeProvider } from "@/components/theme-provider"
+import { Providers } from "@/components/providers"
 import { cn } from "@/lib/utils"
 
 const inter = Inter({
@@ -50,7 +50,7 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        <ThemeProvider>{children}</ThemeProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   )
