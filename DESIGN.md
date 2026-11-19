@@ -38,7 +38,7 @@ All tokens live as oklch CSS variables in `src/app/globals.css` (light in `:root
 
 ## Core patterns (original recipes)
 
-**Storefront hero** — full-bleed food photography with a left-to-right dark gradient (ink 80% → transparent) for text legibility; eyebrow with a short rule; two-line display headline (second line in primary); short lead; primary CTA + inline text link CTA; social-proof row (overlapping avatar circles + star rating + count); small floating status card bottom-right; below the hero, a trust strip of 4 icon+label items separated by hairline dividers.
+**Storefront hero** — split composition: copy on the cream canvas (eyebrow with a short primary rule → two-line display headline with the second line in primary → muted lead → primary CTA) beside the photography in a rounded card (`ring-border`, `shadow-card`) with a soft amber glow behind it and a floating `shadow-lift` status chip overlapping its bottom edge; text-then-image stack on mobile; staggered `motion-safe` fade/slide entrances. Never set text on photography — if a full-bleed photo is used later it requires a gradient scrim. Below the hero, a trust strip of 4 icon+label items separated by hairline dividers.
 
 **Product card** (equal height, `h-full flex flex-col`) — photo top (`aspect-[4/3]`, rounded, `overflow-hidden`, hover `scale-105` on the image) with a favorite heart button top-right and a category chip bottom-left overlaid; body: name + price row, then shop meta (avatar tile + shop name + location) with star rating right; footer row after a hairline divider: "View details" link + arrow that nudges right on hover. Whole card is keyboard-reachable via the link.
 
@@ -67,7 +67,7 @@ Subtle and purposeful only (`tw-animate-css` is available):
 
 - **Existing `components/ui/*`**: `Button` (Base UI — default/outline/secondary/ghost/destructive/link, sizes xs→lg + icon), `Input`, `Label`, `Select` (trigger/items/content), `Card` (+Header/Title/Description/Action/Content/Footer), `Badge` (default/secondary/outline/ghost/link + status variants `success`/`pending`/`destructive`), `Skeleton`, `Avatar`, `DropdownMenu`, `Sheet` (mobile nav), `ThemeProvider` (next-themes), `cn` from `src/lib/utils.ts`.
 - **Still to build as `components/ui/*`** (shadcn `base-nova` / Base UI — add via `npx shadcn@latest add <name>`): dialog, separator, textarea, tabs.
-- **Feature components (`components/`)**: page-container, empty-state, error-state, skeleton-card, site-logo, navbar (sticky header + mobile sheet + auth/profile slot), footer (ink surface), profile-menu; then hero, trust-strip, product-card, category-pills, dashboard-shell (sidebar), stat-card, plan-card.
+- **Feature components (`components/`)**: page-container, empty-state, error-state, skeleton-card, site-logo, navbar (sticky header + mobile sheet + auth/profile slot), footer (ink surface), profile-menu, hero; then trust-strip, product-card, category-pills, dashboard-shell (sidebar), stat-card, plan-card.
 
 ## Rules for every page
 
