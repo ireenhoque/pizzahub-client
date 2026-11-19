@@ -29,11 +29,11 @@ function readUrl(name: string, value: string | undefined, fallback: string) {
 }
 
 export const env = Object.freeze({
-  /** PizzaHub API base, e.g. http://localhost:8000/api */
+  /** PizzaHub API base — matches PORT in pizzahub-server/.env */
   apiBaseUrl: readUrl(
     "NEXT_PUBLIC_API_BASE_URL",
     process.env.NEXT_PUBLIC_API_BASE_URL,
-    "http://localhost:8000/api"
+    "http://localhost:5000/api"
   ),
   /** Canonical public origin of this app (metadata, absolute links). */
   siteUrl: readUrl(

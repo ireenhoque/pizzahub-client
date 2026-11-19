@@ -7,14 +7,7 @@ import { cn } from "cn"
 import heroPizza from "@/assets/hero-pizza.jpg"
 import { PageContainer } from "@/components/page-container"
 import { buttonVariants } from "@/components/ui/button"
-
-// `backwards` fill keeps each element hidden until its delayed entrance
-// starts — tw-animate's `animate-in` defaults to fill `none`, which would
-// flash the content before the animation runs.
-const enter = (delay: string) => ({
-  animationDelay: delay,
-  animationFillMode: "backwards" as const,
-})
+import { enter } from "@/lib/motion"
 
 // Storefront hero — original split composition: copy on the cream canvas,
 // photography in an elevated card (never text over the photo, so contrast
