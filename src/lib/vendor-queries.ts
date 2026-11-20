@@ -141,6 +141,10 @@ export function fetchVendorOrders(query: VendorOrdersQuery = {}) {
   return api.get<VendorOrdersResponse>(`/orders/vendor?${queryString}`)
 }
 
+export function fetchVendorOrder(id: string) {
+  return api.get<OrderDetailResponse>(`/orders/${encodeURIComponent(id)}`)
+}
+
 export function updateVendorOrderStatus(
   id: string,
   input: UpdateVendorOrderStatusInput
@@ -185,6 +189,14 @@ export function useVendorOrders(query: VendorOrdersQuery = {}) {
     queryKey: vendorQueryKeys.orders(query),
     queryFn: () => fetchVendorOrders(query),
     placeholderData: keepPreviousData,
+  })
+}
+
+export function useVendorOrder(id: string | null) {
+  return useQuery({
+    queryKey: vendorQueryKeys.order(id ?? "none"),
+    queryFn: () => fetchVendorOrder(id ?? ""),
+    enabled: Boolean(id),
   })
 }
 
