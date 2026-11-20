@@ -41,7 +41,7 @@ export class ApiError extends Error {
 }
 
 export type ApiRequestInit = Omit<RequestInit, "body"> & {
-  /** Serialized as JSON when present. */
+  /** JSON-serialized when present, or sent as multipart when it is FormData. */
   body?: unknown
   /** Abort the request after this many milliseconds. Default 15000. */
   timeoutMs?: number
@@ -70,9 +70,15 @@ export async function apiFetch<T>(
     ? AbortSignal.any([timeoutSignal, signal])
     : timeoutSignal
 
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData
   const requestHeaders = new Headers(headers)
   requestHeaders.set("Accept", "application/json")
-  if (body !== undefined) requestHeaders.set("Content-Type", "application/json")
+
+  if (body !== undefined && !isFormData) {
+    requestHeaders.set("Content-Type", "application/json")
+  }
+  // Let fetch set the multipart boundary instead of forcing a content type.
+  if (isFormData) requestHeaders.delete("Content-Type")
 
   // Attach the in-memory JWT when available; an explicit caller header wins.
   const accessToken = accessTokenGetter?.()
@@ -80,13 +86,19 @@ export async function apiFetch<T>(
     requestHeaders.set("Authorization", `Bearer ${accessToken}`)
   }
 
+  const requestBody = isFormData
+    ? body
+    : body !== undefined
+      ? JSON.stringify(body)
+      : undefined
+
   let response: Response
   try {
     response = await fetch(url, {
       ...rest,
       headers: requestHeaders,
       signal: requestSignal,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: requestBody,
     })
   } catch (cause) {
     if (cause instanceof DOMException && cause.name === "TimeoutError") {

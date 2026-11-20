@@ -172,3 +172,72 @@ export type CustomerOrdersResponse = ApiEnvelope<{
 }>
 
 export type OrderDetailResponse = ApiEnvelope<{ order: Order }>
+
+/** Query accepted by `GET /api/menu-items/mine`. */
+export type VendorMenuItemsQuery = {
+  page?: number
+  limit?: number
+  status?: MenuItemStatus
+}
+
+/** Multipart body for `POST /api/menu-items`; the server owns vendor/status. */
+export type CreateVendorMenuItemInput = {
+  name: string
+  category: MenuItemCategory
+  description: string
+  price: number
+  location: string
+  image: File
+}
+
+/** JSON body for `PATCH /api/menu-items/mine/:id`. */
+export type UpdateVendorMenuItemInput = {
+  name?: string
+  description?: string
+  category?: MenuItemCategory
+  price?: number
+  location?: string
+  tags?: string[]
+  isAvailable?: boolean
+}
+
+export type VendorMenuItemsResponse = ApiEnvelope<Paginated<MenuItem>>
+
+/** Create, update and delete all return `data.menuItem`. */
+export type VendorMenuItemResponse = ApiEnvelope<{ menuItem: MenuItem }>
+
+/** Query accepted by `GET /api/orders/vendor`. */
+export type VendorOrdersQuery = {
+  page?: number
+  limit?: number
+}
+
+/** `data` is keyed by `orders`, like the customer order list. */
+export type VendorOrdersResponse = ApiEnvelope<{
+  orders: Order[]
+  pagination: PaginationMeta
+}>
+
+/** Vendors cannot set the customer-owned `cart` status. */
+export type VendorOrderStatus = Exclude<OrderStatus, "cart">
+
+export type UpdateVendorOrderStatusInput = {
+  status: VendorOrderStatus
+}
+
+/** Mirrors the server's raw subscription status DTO. */
+export type VendorSubscription = {
+  plan: string
+  isActive: boolean
+  expiresAt: string | null
+  stripeSubscriptionId: string | null
+}
+
+export type VendorSubscriptionResponse = ApiEnvelope<{
+  subscription: VendorSubscription
+}>
+
+export type VendorCheckoutResponse = ApiEnvelope<{
+  sessionId: string
+  checkoutUrl: string
+}>
