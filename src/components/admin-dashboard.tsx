@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { CreditCard } from "lucide-react"
 
 import { AdminGuard } from "@/components/admin-guard"
 import { AdminMenuApproval } from "@/components/admin-menu-approval"
@@ -22,12 +23,21 @@ function AdminDashboard() {
               fresh menu items.
             </p>
           </div>
-          <Link
-            href="/admin/users"
-            className={buttonVariants({ variant: "outline" })}
-          >
-            Manage users
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/admin/users"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              Manage users
+            </Link>
+            <Link
+              href="/admin/transactions"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <CreditCard aria-hidden="true" />
+              Transactions
+            </Link>
+          </div>
         </header>
 
         <AdminMenuApproval />

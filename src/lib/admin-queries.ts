@@ -66,6 +66,7 @@ export function adminMenuItemsQueryString(query: AdminMenuItemsQuery = {}) {
 
 export const adminQueryKeyBases = {
   menuItems: ["admin", "menu-items"] as const,
+  transactions: ["admin", "transactions"] as const,
   users: ["admin", "users"] as const,
   vendors: ["admin", "vendors"] as const,
 }

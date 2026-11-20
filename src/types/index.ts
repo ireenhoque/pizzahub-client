@@ -241,3 +241,65 @@ export type VendorCheckoutResponse = ApiEnvelope<{
   sessionId: string
   checkoutUrl: string
 }>
+
+/** Transaction contexts returned by `GET /api/transactions`. */
+export const TRANSACTION_CONTEXTS = [
+  "customer_order",
+  "vendor_subscription",
+] as const
+export type TransactionContext = (typeof TRANSACTION_CONTEXTS)[number]
+
+/** Transaction lifecycle values returned by `GET /api/transactions`. */
+export const TRANSACTION_TYPES = ["payment", "refund"] as const
+export type TransactionType = (typeof TRANSACTION_TYPES)[number]
+
+/** Payment statuses returned by `GET /api/transactions`. */
+export const PAYMENT_STATUSES = [
+  "pending",
+  "paid",
+  "failed",
+  "refunded",
+] as const
+export type PaymentStatus = (typeof PAYMENT_STATUSES)[number]
+
+/** Safe-to-expose customer/vendor reference from the transaction API. */
+export type TransactionParty = {
+  id: string
+  name: string | null
+  email: string | null
+}
+
+/**
+ * Whitelisted admin transaction DTO. Stripe identifiers are references, not
+ * secrets; raw internal documents and credential data are never returned.
+ */
+export type AdminTransaction = {
+  id: string
+  context: TransactionContext
+  type: TransactionType
+  paymentStatus: PaymentStatus
+  amount: number
+  currency: string
+  orderId?: string
+  customer: TransactionParty
+  vendor: TransactionParty
+  stripeSessionId: string
+  stripePaymentIntentId?: string
+  stripeSubscriptionId?: string
+  createdAt?: string
+  updatedAt?: string
+  paidAt?: string
+  refundedAt?: string
+  failureReason?: string
+}
+
+export type AdminTransactionsResponse = ApiEnvelope<{
+  transactions: AdminTransaction[]
+  pagination: PaginationMeta
+}>
+
+/** Sortable fields accepted by `GET /api/transactions`. */
+export type AdminTransactionSortField = "createdAt" | "amount" | "updatedAt"
+
+/** Sort directions accepted by `GET /api/transactions`. */
+export type AdminTransactionSortOrder = "asc" | "desc"
