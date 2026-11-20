@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import {
   ChevronLeft,
   ChevronRight,
@@ -36,10 +36,7 @@ import {
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { apiErrorMessage } from "@/lib/api-error"
-import {
-  useAdminTransactions,
-  useInvalidateAdminTransactions,
-} from "@/lib/admin-transaction-queries"
+import { useAdminTransactions } from "@/lib/admin-transaction-queries"
 import { formatCurrency, formatDate, formatNumber } from "@/lib/format"
 import type {
   AdminTransaction,
@@ -265,8 +262,9 @@ function AdminTransactionHistory() {
   const [sortOrder, setSortOrder] = useState<AdminTransactionSortOrder>("desc")
   const [from, setFrom] = useState("")
   const [to, setTo] = useState("")
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const refreshInFlight = useRef(false)
 
-  const invalidateTransactions = useInvalidateAdminTransactions()
   const invalidDateRange = Boolean(from && to && from > to)
 
   useEffect(() => {
@@ -294,6 +292,22 @@ function AdminTransactionHistory() {
 
   const transactions = transactionsQuery.data?.data.transactions ?? []
   const pagination = transactionsQuery.data?.data.pagination
+
+  async function refreshTransactions() {
+    if (refreshInFlight.current || transactionsQuery.isFetching) return
+
+    refreshInFlight.current = true
+    setIsRefreshing(true)
+    try {
+      // Refetch the observer's active query so the current filters, date range,
+      // sort order, and page are preserved. `cancelRefetch: false` keeps an
+      // already-running request instead of starting a duplicate one.
+      await transactionsQuery.refetch({ cancelRefetch: false })
+    } finally {
+      refreshInFlight.current = false
+      setIsRefreshing(false)
+    }
+  }
 
   function resetFilters() {
     setSearchInput("")
@@ -353,13 +367,19 @@ function AdminTransactionHistory() {
               type="button"
               variant="ghost"
               size="sm"
-              disabled={transactionsQuery.isFetching}
+              disabled={
+                invalidDateRange || isRefreshing || transactionsQuery.isFetching
+              }
+              aria-busy={isRefreshing}
               onClick={() => {
-                void invalidateTransactions()
+                void refreshTransactions()
               }}
             >
-              <RefreshCw aria-hidden="true" />
-              Refresh
+              <RefreshCw
+                className={cn("size-4", isRefreshing && "animate-spin")}
+                aria-hidden="true"
+              />
+              {isRefreshing ? "Refreshing…" : "Refresh"}
             </Button>
           </CardAction>
         </CardHeader>

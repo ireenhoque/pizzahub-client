@@ -1,10 +1,6 @@
 "use client"
 
-import {
-  keepPreviousData,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 
 import { adminQueryKeyBases } from "@/lib/admin-queries"
 import { api } from "@/lib/api-client"
@@ -79,11 +75,4 @@ export function useAdminTransactions(
     placeholderData: keepPreviousData,
     enabled,
   })
-}
-
-/** Invalidates every cached admin transaction list (used by manual refresh). */
-export function useInvalidateAdminTransactions() {
-  const queryClient = useQueryClient()
-  return () =>
-    queryClient.invalidateQueries({ queryKey: adminTransactionQueryKeys.all })
 }
