@@ -67,6 +67,8 @@ export type MenuItem = {
   imageThumbUrl?: string | null
   status: MenuItemStatus
   isAvailable: boolean
+  /** Server-derived vendor Premium status (never supplied by the client). */
+  isPremium?: boolean
   ratingAvg: number
   ratingCount: number
   createdAt?: string
@@ -303,3 +305,35 @@ export type AdminTransactionSortField = "createdAt" | "amount" | "updatedAt"
 
 /** Sort directions accepted by `GET /api/transactions`. */
 export type AdminTransactionSortOrder = "asc" | "desc"
+
+/** Whitelisted counts returned by `GET /api/admin/overview`. */
+export type AdminOverview = {
+  users: {
+    total: number
+    customers: number
+    vendors: number
+    admins: number
+  }
+  menuItems: {
+    total: number
+    active: number
+    pending: number
+    inactive: number
+    rejected: number
+    outOfStock: number
+  }
+  orders: {
+    total: number
+    placed: number
+    delivered: number
+  }
+  transactions: {
+    count: number
+    paidCount: number
+    totalAmount: number
+    paidAmount: number
+    currency: string
+  }
+}
+
+export type AdminOverviewResponse = ApiEnvelope<AdminOverview>

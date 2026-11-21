@@ -11,6 +11,7 @@ import {
 import { api } from "@/lib/api-client"
 import { vendorQueryKeyBases } from "@/lib/vendor-queries"
 import type {
+  AdminOverviewResponse,
   ApiEnvelope,
   MenuItem,
   MenuItemStatus,
@@ -69,6 +70,7 @@ export const adminQueryKeyBases = {
   transactions: ["admin", "transactions"] as const,
   users: ["admin", "users"] as const,
   vendors: ["admin", "vendors"] as const,
+  overview: ["admin", "overview"] as const,
 }
 
 export const adminQueryKeys = {
@@ -79,11 +81,13 @@ export const adminQueryKeys = {
       adminMenuItemsQueryString(query),
     ] as const,
   vendors: [...adminQueryKeyBases.vendors, "list"] as const,
+  overview: adminQueryKeyBases.overview,
 }
 
 function invalidateAdminMenuData(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: adminQueryKeyBases.menuItems }),
+    queryClient.invalidateQueries({ queryKey: adminQueryKeyBases.overview }),
     queryClient.invalidateQueries({ queryKey: vendorQueryKeyBases.menuItems }),
     // Approval changes storefront visibility; these are the public cache keys.
     queryClient.invalidateQueries({ queryKey: ["menu-items"] }),
@@ -99,6 +103,10 @@ export function fetchAdminMenuItems(query: AdminMenuItemsQuery = {}) {
 
 export function fetchAdminVendors() {
   return api.get<AdminVendorsResponse>("/users?role=vendor&page=1&limit=100")
+}
+
+export function fetchAdminOverview() {
+  return api.get<AdminOverviewResponse>("/admin/overview")
 }
 
 export function approveAdminMenuItem(id: string) {
@@ -127,6 +135,14 @@ export function useAdminVendors() {
     queryKey: adminQueryKeys.vendors,
     queryFn: fetchAdminVendors,
     staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useAdminOverview() {
+  return useQuery({
+    queryKey: adminQueryKeys.overview,
+    queryFn: fetchAdminOverview,
+    staleTime: 30 * 1000,
   })
 }
 

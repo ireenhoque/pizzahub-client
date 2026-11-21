@@ -1,4 +1,4 @@
-import { MapPin, Plus, Store } from "lucide-react"
+import { MapPin, Plus, Sparkles, Store } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { cn } from "cn"
@@ -6,6 +6,7 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { formatCurrency } from "@/lib/format"
+import { isMenuItemUnavailable } from "@/lib/menu-availability"
 import type { MenuItem } from "@/types"
 
 type MenuCardProps = {
@@ -34,6 +35,7 @@ function MenuCard({
   onAddToCart,
 }: MenuCardProps) {
   const vendor = item.vendorName ?? `#${item.vendorId.slice(0, 8)}`
+  const unavailable = isMenuItemUnavailable(item)
 
   return (
     <Card
@@ -58,6 +60,17 @@ function MenuCard({
           >
             {item.category}
           </Badge>
+          {item.isPremium ? (
+            <Badge variant="premium" className="absolute top-3 right-3">
+              <Sparkles aria-hidden="true" />
+              Premium
+            </Badge>
+          ) : null}
+          {unavailable ? (
+            <Badge variant="destructive" className="absolute right-3 bottom-3">
+              Unavailable
+            </Badge>
+          ) : null}
         </div>
 
         <div className="flex items-start justify-between gap-3">
@@ -110,12 +123,17 @@ function MenuCard({
             <Button
               type="button"
               size="sm"
-              aria-label={`Add ${item.name} to cart`}
+              disabled={unavailable}
+              aria-label={
+                unavailable
+                  ? `${item.name} is currently unavailable`
+                  : `Add ${item.name} to cart`
+              }
               onClick={() => onAddToCart(item)}
               className="shrink-0"
             >
               <Plus aria-hidden="true" />
-              Add
+              {unavailable ? "Unavailable" : "Add"}
             </Button>
           ) : null}
         </div>

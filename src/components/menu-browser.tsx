@@ -8,10 +8,12 @@ import {
   Search,
   ShoppingCart,
   SlidersHorizontal,
+  Sparkles,
   Star,
 } from "lucide-react"
 import Image from "next/image"
-import { useEffect, useMemo, useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { cn } from "cn"
 import { useCart } from "@/components/cart-provider"
 import { EmptyState } from "@/components/empty-state"
@@ -41,9 +43,12 @@ import {
 } from "@/components/ui/sheet"
 import { api } from "@/lib/api-client"
 import { formatCurrency, formatDate, formatNumber } from "@/lib/format"
+import { isMenuItemUnavailable } from "@/lib/menu-availability"
 import {
   MENU_CATEGORY_LABELS,
   MENU_CATEGORY_VALUES,
+  menuCategoryFromSlug,
+  menuFacetFromSlug,
 } from "@/lib/menu-categories"
 import type {
   MenuItemCategory,
@@ -55,6 +60,15 @@ import type {
 
 const PAGE_SIZE = 9
 const DEFAULT_SORT = "createdAt:desc" as const
+const FILTER_PARAM_KEYS = [
+  "search",
+  "minPrice",
+  "maxPrice",
+  "category",
+  "sortBy",
+  "sortOrder",
+  "page",
+] as const
 
 type SortSelection = `${MenuItemSortField}:${MenuItemSortOrder}`
 
@@ -67,11 +81,29 @@ const SORT_OPTIONS: ReadonlyArray<{ label: string; value: SortSelection }> = [
   { label: "Lowest rated", value: "ratingAvg:asc" },
 ]
 
-type MenuBrowserProps = {
-  /** Category translated from a homepage facet slug by the server page. */
-  initialCategory?: MenuItemCategory | null
-  /** Supports the existing `/menu?item=<id>` deep link from menu cards. */
-  initialItemId?: string | null
+function firstParam(value: string | null): string | null {
+  return value?.trim() ? value : null
+}
+
+function parsePage(value: string | null): number {
+  const parsed = Number(value ?? "")
+  return Number.isInteger(parsed) && parsed >= 1 ? parsed : 1
+}
+
+function parseSort(value: string | null, order: string | null): SortSelection {
+  const candidate = `${value ?? "createdAt"}:${order ?? "desc"}`
+  return SORT_OPTIONS.some((option) => option.value === candidate)
+    ? (candidate as SortSelection)
+    : DEFAULT_SORT
+}
+
+function setOrDeleteParam(
+  params: URLSearchParams,
+  key: string,
+  value: string | null
+) {
+  if (value) params.set(key, value)
+  else params.delete(key)
 }
 
 function parsePrice(value: string): number | null {
@@ -96,37 +128,117 @@ function validatePriceRange(minInput: string, maxInput: string): string | null {
   return null
 }
 
-// Storefront menu browser — all state lives here and every filter maps to a
-// whitelisted query param on GET /api/menu-items. The Express API remains the
-// source of truth for which items are public, active, and in stock.
-function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
+// Storefront menu browser — URL query params are the single source of truth for
+// filters, so refresh and browser history restore the exact same result set.
+// The Express API remains authoritative for public, active, in-stock items.
+function MenuBrowser() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { addItem } = useCart()
-  const [search, setSearch] = useState("")
-  const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [category, setCategory] = useState<MenuItemCategory | "all">(
-    initialCategory ?? "all"
+
+  const searchParam = firstParam(searchParams.get("search"))?.trim() ?? ""
+  const categoryParam = firstParam(searchParams.get("category"))
+  const category = menuCategoryFromSlug(categoryParam) ?? "all"
+  const activeFacet = menuFacetFromSlug(categoryParam)
+  const minPrice = firstParam(searchParams.get("minPrice")) ?? ""
+  const maxPrice = firstParam(searchParams.get("maxPrice")) ?? ""
+  const sort = parseSort(
+    firstParam(searchParams.get("sortBy")),
+    firstParam(searchParams.get("sortOrder"))
   )
-  const [minPrice, setMinPrice] = useState("")
-  const [maxPrice, setMaxPrice] = useState("")
-  const [sort, setSort] = useState<SortSelection>(DEFAULT_SORT)
-  const [page, setPage] = useState(1)
-  const [activeItemId, setActiveItemId] = useState<string | null>(
-    initialItemId ?? null
+  const page = parsePage(firstParam(searchParams.get("page")))
+  const activeItemId = firstParam(searchParams.get("item"))
+
+  const [searchInput, setSearchInput] = useState(searchParam)
+  const [minPriceInput, setMinPriceInput] = useState(minPrice)
+  const [maxPriceInput, setMaxPriceInput] = useState(maxPrice)
+  const urlParamsRef = useRef(new URLSearchParams(searchParams.toString()))
+  const [lastUrlSearch, setLastUrlSearch] = useState(searchParam)
+  const [lastUrlMinPrice, setLastUrlMinPrice] = useState(minPrice)
+  const [lastUrlMaxPrice, setLastUrlMaxPrice] = useState(maxPrice)
+
+  useEffect(() => {
+    urlParamsRef.current = new URLSearchParams(searchParams.toString())
+  }, [searchParams])
+
+  // Back/forward and externally supplied URLs win over local draft text. This
+  // is React's "adjust state during render" pattern, not a cascading effect.
+  if (lastUrlSearch !== searchParam) {
+    setLastUrlSearch(searchParam)
+    setSearchInput(searchParam)
+  }
+  if (lastUrlMinPrice !== minPrice) {
+    setLastUrlMinPrice(minPrice)
+    setMinPriceInput(minPrice)
+  }
+  if (lastUrlMaxPrice !== maxPrice) {
+    setLastUrlMaxPrice(maxPrice)
+    setMaxPriceInput(maxPrice)
+  }
+
+  const updateUrlParams = useCallback(
+    (
+      mutate: (params: URLSearchParams) => void,
+      resetPage = false,
+      replace = false
+    ) => {
+      const current = urlParamsRef.current.toString()
+      const params = new URLSearchParams(current)
+      mutate(params)
+      if (resetPage) params.set("page", "1")
+
+      const next = params.toString()
+      if (next === current) return
+
+      urlParamsRef.current = params
+      const href = next ? `${pathname}?${next}` : pathname
+      if (replace) router.replace(href, { scroll: false })
+      else router.push(href, { scroll: false })
+    },
+    [pathname, router]
   )
 
-  // Debounce the API request; resetting the page in the timer callback keeps
-  // filter changes off a stale page without a setState-in-effect body.
+  // Only the debounced URL value drives the API query — typing never fires a
+  // request per keystroke.
   useEffect(() => {
+    const trimmed = searchInput.trim()
+    if (trimmed === searchParam) return
+
     const timer = window.setTimeout(() => {
-      setDebouncedSearch(search.trim())
-      setPage(1)
+      updateUrlParams(
+        (params) => {
+          setOrDeleteParam(params, "search", trimmed)
+          params.set("page", "1")
+        },
+        false,
+        true
+      )
     }, 300)
     return () => window.clearTimeout(timer)
-  }, [search])
+  }, [searchInput, searchParam, updateUrlParams])
+
+  // Price inputs are also debounced before they become URL/API state.
+  useEffect(() => {
+    if (minPriceInput === minPrice && maxPriceInput === maxPrice) return
+
+    const timer = window.setTimeout(() => {
+      updateUrlParams(
+        (params) => {
+          setOrDeleteParam(params, "minPrice", minPriceInput.trim() || null)
+          setOrDeleteParam(params, "maxPrice", maxPriceInput.trim() || null)
+          params.set("page", "1")
+        },
+        false,
+        true
+      )
+    }, 300)
+    return () => window.clearTimeout(timer)
+  }, [minPriceInput, maxPriceInput, minPrice, maxPrice, updateUrlParams])
 
   const min = parsePrice(minPrice)
   const max = parsePrice(maxPrice)
-  const priceError = validatePriceRange(minPrice, maxPrice)
+  const priceError = validatePriceRange(minPriceInput, maxPriceInput)
 
   const queryString = useMemo(() => {
     const [sortBy, sortOrder] = sort.split(":") as [
@@ -140,13 +252,13 @@ function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
       sortOrder,
     })
 
-    if (debouncedSearch) params.set("search", debouncedSearch)
+    if (searchParam) params.set("search", searchParam)
     if (category !== "all") params.set("category", category)
     if (min !== null) params.set("minPrice", String(min))
     if (max !== null) params.set("maxPrice", String(max))
 
     return params.toString()
-  }, [debouncedSearch, category, min, max, sort, page])
+  }, [searchParam, category, min, max, sort, page])
 
   const { data, isPending, isError, isFetching, error, refetch } = useQuery({
     queryKey: ["menu-items", "browse", queryString],
@@ -166,44 +278,72 @@ function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
 
   const items = data?.data.items ?? []
   const pagination = data?.data.pagination
+  const totalPages = pagination?.totalPages ?? 0
   const detailItem = detailQuery.data?.data.menuItem
+  const detailUnavailable = detailItem
+    ? isMenuItemUnavailable(detailItem)
+    : false
+
+  // A shared link may point past the last page. Correct it once instead of
+  // leaving the customer on an empty result set.
+  useEffect(() => {
+    if (totalPages < 1 || page <= totalPages) return
+    updateUrlParams(
+      (params) => {
+        params.set("page", String(totalPages))
+      },
+      false,
+      true
+    )
+  }, [totalPages, page, updateUrlParams])
 
   const hasActiveFilters = Boolean(
-    search ||
-    category !== "all" ||
-    minPrice ||
-    maxPrice ||
-    sort !== DEFAULT_SORT
+    searchInput ||
+      category !== "all" ||
+      minPriceInput ||
+      maxPriceInput ||
+      sort !== DEFAULT_SORT
   )
 
   function updateCategory(value: MenuItemCategory | "all") {
-    setCategory(value)
-    setPage(1)
+    updateUrlParams((params) => {
+      if (value === "all") params.delete("category")
+      else params.set("category", value)
+    }, true)
   }
 
   function updateMinPrice(value: string) {
-    setMinPrice(value)
-    setPage(1)
+    setMinPriceInput(value)
   }
 
   function updateMaxPrice(value: string) {
-    setMaxPrice(value)
-    setPage(1)
+    setMaxPriceInput(value)
   }
 
   function updateSort(value: SortSelection) {
-    setSort(value)
-    setPage(1)
+    updateUrlParams((params) => {
+      if (value === DEFAULT_SORT) {
+        params.delete("sortBy")
+        params.delete("sortOrder")
+      } else {
+        const [sortBy, sortOrder] = value.split(":")
+        params.set("sortBy", sortBy)
+        params.set("sortOrder", sortOrder)
+      }
+    }, true)
   }
 
   function clearFilters() {
-    setSearch("")
-    setDebouncedSearch("")
-    setCategory("all")
-    setMinPrice("")
-    setMaxPrice("")
-    setSort(DEFAULT_SORT)
-    setPage(1)
+    setSearchInput("")
+    setMinPriceInput("")
+    setMaxPriceInput("")
+    updateUrlParams((params) => {
+      for (const key of FILTER_PARAM_KEYS) params.delete(key)
+    })
+  }
+
+  function setItemParam(id: string | null) {
+    updateUrlParams((params) => setOrDeleteParam(params, "item", id))
   }
 
   const resultCaption =
@@ -227,6 +367,11 @@ function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
           Search approved, in-stock items from neighborhood kitchens. Filter by
           category and price, then open any item for the full description.
         </p>
+        {activeFacet ? (
+          <Badge variant="secondary" className="w-fit">
+            {activeFacet.label}
+          </Badge>
+        ) : null}
       </header>
 
       <Card className="gap-4 p-4">
@@ -241,8 +386,8 @@ function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
               <Input
                 id="menu-search"
                 type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="Search by name or description"
                 className="h-10 pl-9"
               />
@@ -257,7 +402,7 @@ function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
               inputMode="decimal"
               min={0}
               step="0.01"
-              value={minPrice}
+              value={minPriceInput}
               onChange={(event) => updateMinPrice(event.target.value)}
               placeholder="0.00"
               className="h-10"
@@ -272,7 +417,7 @@ function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
               inputMode="decimal"
               min={0}
               step="0.01"
-              value={maxPrice}
+              value={maxPriceInput}
               onChange={(event) => updateMaxPrice(event.target.value)}
               placeholder="Any"
               className="h-10"
@@ -434,7 +579,7 @@ function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
               <MenuCard
                 key={item.id}
                 item={item}
-                onSelect={(selected) => setActiveItemId(selected.id)}
+                onSelect={(selected) => setItemParam(selected.id)}
                 onAddToCart={addItem}
               />
             ))}
@@ -450,7 +595,11 @@ function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
                 size="lg"
                 className="h-10"
                 disabled={pagination.page <= 1 || isFetching}
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                onClick={() =>
+                  updateUrlParams((params) => {
+                    params.set("page", String(Math.max(1, page - 1)))
+                  })
+                }
               >
                 <ChevronLeft aria-hidden="true" />
                 Previous
@@ -468,7 +617,11 @@ function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
                 disabled={
                   pagination.page >= pagination.totalPages || isFetching
                 }
-                onClick={() => setPage((current) => current + 1)}
+                onClick={() =>
+                  updateUrlParams((params) => {
+                    params.set("page", String(page + 1))
+                  })
+                }
               >
                 Next
                 <ChevronRight aria-hidden="true" />
@@ -481,7 +634,7 @@ function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
       <Sheet
         open={Boolean(activeItemId)}
         onOpenChange={(open) => {
-          if (!open) setActiveItemId(null)
+          if (!open) setItemParam(null)
         }}
       >
         <SheetContent
@@ -553,6 +706,20 @@ function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
                   >
                     {detailItem.category}
                   </Badge>
+                  {detailItem.isPremium ? (
+                    <Badge variant="premium" className="absolute top-3 right-3">
+                      <Sparkles aria-hidden="true" />
+                      Premium
+                    </Badge>
+                  ) : null}
+                  {detailUnavailable ? (
+                    <Badge
+                      variant="destructive"
+                      className="absolute right-3 bottom-3"
+                    >
+                      Unavailable
+                    </Badge>
+                  ) : null}
                 </div>
 
                 <div className="flex items-start justify-between gap-3">
@@ -606,14 +773,31 @@ function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
                   </div>
                 </dl>
 
-                <Button className="w-full" onClick={() => addItem(detailItem)}>
+                {detailUnavailable ? (
+                  <p
+                    id="detail-unavailable"
+                    role="status"
+                    className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                  >
+                    This item is currently unavailable. Check back soon or
+                    choose another item from the menu.
+                  </p>
+                ) : null}
+                <Button
+                  className="w-full"
+                  disabled={detailUnavailable}
+                  aria-describedby={
+                    detailUnavailable ? "detail-unavailable" : undefined
+                  }
+                  onClick={() => addItem(detailItem)}
+                >
                   <ShoppingCart aria-hidden="true" />
-                  Add to cart
+                  {detailUnavailable ? "Currently unavailable" : "Add to cart"}
                 </Button>
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => setActiveItemId(null)}
+                  onClick={() => setItemParam(null)}
                 >
                   Close details
                 </Button>
@@ -626,4 +810,4 @@ function MenuBrowser({ initialCategory, initialItemId }: MenuBrowserProps) {
   )
 }
 
-export { MenuBrowser, type MenuBrowserProps }
+export { MenuBrowser }

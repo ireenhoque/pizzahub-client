@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 
+import { useAuth } from "@/components/auth-provider"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -29,6 +30,7 @@ function destinationForRole(role: unknown): string {
 
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter()
+  const { signOut } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -90,7 +92,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       }
 
       if (result.data?.user.isBlocked) {
-        await authClient.signOut()
+        await signOut()
         setError("Your account has been blocked. Contact PizzaHub support.")
         return
       }

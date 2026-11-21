@@ -1,5 +1,6 @@
 import {
   Beef,
+  CakeSlice,
   ChefHat,
   CupSoda,
   Leaf,
@@ -9,7 +10,7 @@ import {
 } from "lucide-react"
 import type { MenuItemCategory } from "@/types"
 
-// The six storefront category facets. `slug` is the `?category=` value the
+// The storefront category facets. `slug` is the `?category=` value the
 // Browse Menu link carries; `apiCategories` maps each facet to the Express
 // enum (GET /api/menu-items?category=...) so the menu page can translate
 // facets into API filters without duplicating the contract.
@@ -58,11 +59,18 @@ export const MENU_CATEGORY_FACETS: MenuCategoryFacet[] = [
     apiCategories: ["sides"],
   },
   {
-    slug: "beverages-desserts",
-    label: "Beverages and Desserts",
-    blurb: "Sodas, shakes, cookies, and sweet finishes.",
+    slug: "beverages",
+    label: "Beverages",
+    blurb: "Sodas, shakes, and chilled refreshers.",
     icon: CupSoda,
-    apiCategories: ["drinks", "desserts"],
+    apiCategories: ["drinks"],
+  },
+  {
+    slug: "desserts",
+    label: "Desserts",
+    blurb: "Cookies, cakes, and sweet finishes.",
+    icon: CakeSlice,
+    apiCategories: ["desserts"],
   },
 ]
 
@@ -84,19 +92,41 @@ export const MENU_CATEGORY_LABELS: Record<MenuItemCategory, string> = {
   combos: "Combos",
 }
 
+/** Old bookmarked facet slugs keep working without restoring the bad grouping. */
+const LEGACY_FACET_CATEGORIES: Record<string, MenuItemCategory> = {
+  "beverages-desserts": "drinks",
+}
+
+function firstValue(slug?: string | string[] | null): string | null {
+  const value = Array.isArray(slug) ? slug[0] : slug
+  return value || null
+}
+
+/** Resolves a homepage facet slug without flattening its distinct identity. */
+export function menuFacetFromSlug(
+  slug?: string | string[] | null
+): MenuCategoryFacet | null {
+  const value = firstValue(slug)
+  if (!value) return null
+  return MENU_CATEGORY_FACETS.find((entry) => entry.slug === value) ?? null
+}
+
 /**
  * Translates a homepage facet slug (or a direct API value) into the single
- * category the Express list endpoint accepts. Facets that span multiple API
- * categories fall back to their first value because the API takes one category.
+ * category the Express list endpoint accepts. Facet slugs stay in the browser
+ * URL; only the API query is narrowed to the backed category value.
  */
 export function menuCategoryFromSlug(
   slug?: string | string[] | null
 ): MenuItemCategory | null {
-  const value = Array.isArray(slug) ? slug[0] : slug
+  const value = firstValue(slug)
   if (!value) return null
 
-  const facet = MENU_CATEGORY_FACETS.find((entry) => entry.slug === value)
+  const facet = menuFacetFromSlug(value)
   if (facet) return facet.apiCategories[0] ?? null
+
+  const legacy = LEGACY_FACET_CATEGORIES[value]
+  if (legacy) return legacy
 
   return MENU_CATEGORY_VALUES.includes(value as MenuItemCategory)
     ? (value as MenuItemCategory)

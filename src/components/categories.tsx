@@ -23,8 +23,8 @@ function Categories() {
             What are you craving?
           </h2>
           <p className="max-w-prose text-sm text-muted-foreground md:text-base">
-            Six ways into the menu — tap a category to open Browse Menu with the
-            filter already applied.
+            {MENU_CATEGORY_FACETS.length} ways into the menu — tap a category to
+            open Browse Menu with the filter already applied.
           </p>
         </div>
 

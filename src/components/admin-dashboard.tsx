@@ -5,6 +5,7 @@ import { CreditCard } from "lucide-react"
 
 import { AdminGuard } from "@/components/admin-guard"
 import { AdminMenuApproval } from "@/components/admin-menu-approval"
+import { AdminOverview } from "@/components/admin-overview"
 import { PageContainer } from "@/components/page-container"
 import { buttonVariants } from "@/components/ui/button"
 
@@ -40,6 +41,7 @@ function AdminDashboard() {
           </div>
         </header>
 
+        <AdminOverview />
         <AdminMenuApproval />
       </PageContainer>
     </AdminGuard>

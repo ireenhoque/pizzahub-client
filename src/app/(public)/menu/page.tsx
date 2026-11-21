@@ -1,25 +1,34 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import { MenuBrowser } from "@/components/menu-browser"
-import { menuCategoryFromSlug } from "@/lib/menu-categories"
+import { PageContainer } from "@/components/page-container"
+import { SkeletonCard } from "@/components/skeleton-card"
 
 export const metadata: Metadata = {
   title: "Browse Menu",
 }
 
-type MenuPageProps = {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+function MenuBrowserFallback() {
+  return (
+    <PageContainer className="flex flex-col gap-8 py-12 md:py-16">
+      <div role="status" aria-label="Loading menu">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 9 }, (_, index) => (
+            <SkeletonCard key={index} />
+          ))}
+        </div>
+      </div>
+    </PageContainer>
+  )
 }
 
-// The server translates homepage facet slugs into the single API category and
-// forwards the existing `?item=<id>` deep link; all live filtering happens in
-// the client browser component against the Express API.
-export default async function MenuPage({ searchParams }: MenuPageProps) {
-  const params = await searchParams
-  const category = menuCategoryFromSlug(params.category)
-  const itemParam = params.item
-  const itemId = Array.isArray(itemParam) ? itemParam[0] : itemParam
-
+// useSearchParams reads the customer-facing filter URL on the client. The
+// Suspense boundary keeps the route compatible with prerendering while the
+// filter state hydrates.
+export default function MenuPage() {
   return (
-    <MenuBrowser initialCategory={category} initialItemId={itemId ?? null} />
+    <Suspense fallback={<MenuBrowserFallback />}>
+      <MenuBrowser />
+    </Suspense>
   )
 }

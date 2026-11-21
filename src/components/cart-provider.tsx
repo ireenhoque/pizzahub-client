@@ -6,9 +6,12 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react"
+import { useAuth } from "@/components/auth-provider"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -19,6 +22,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { formatCurrency } from "@/lib/format"
+import { isMenuItemUnavailable } from "@/lib/menu-availability"
 import type { MenuItem } from "@/types"
 
 // In-memory cart: state lives in the app-wide provider, never in web storage.
@@ -33,7 +37,9 @@ export type CartItem = {
 }
 
 export type AddToCartResult =
-  { status: "added"; replaced: boolean } | { status: "confirmation-required" }
+  | { status: "added"; replaced: boolean }
+  | { status: "confirmation-required" }
+  | { status: "unavailable" }
 
 type CartContextValue = {
   items: CartItem[]
@@ -57,9 +63,32 @@ function vendorLabel(item: MenuItem) {
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth()
   const [items, setItems] = useState<CartItem[]>([])
   const [pendingItem, setPendingItem] = useState<MenuItem | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
+
+  // Refs make rapid repeated clicks deterministic: the next click sees the
+  // line added by the previous one before React commits a new render.
+  const itemsRef = useRef<CartItem[]>([])
+
+  const resetCart = useCallback(() => {
+    itemsRef.current = []
+    setItems([])
+    setPendingItem(null)
+    setConfirmOpen(false)
+  }, [])
+
+  // The provider lives inside AuthProvider, so every sign-out, direct account
+  // switch, or cross-tab session change is observed here. Never clear on the
+  // initial null → first session transition; there is no cart to protect yet.
+  const userId = user?.id ?? null
+  const previousUserIdRef = useRef<string | null | undefined>(undefined)
+  useEffect(() => {
+    const previous = previousUserIdRef.current
+    previousUserIdRef.current = userId
+    if (previous !== undefined && previous !== userId) resetCart()
+  }, [userId, resetCart])
 
   const vendorId = items[0]?.item.vendorId ?? null
   const currency = items[0]?.item.currency ?? null
@@ -77,61 +106,70 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = useCallback(
     (item: MenuItem): AddToCartResult => {
-      if (vendorId && vendorId !== item.vendorId) {
+      if (isMenuItemUnavailable(item)) {
+        return { status: "unavailable" }
+      }
+
+      const currentItems = itemsRef.current
+      const currentVendorId = currentItems[0]?.item.vendorId ?? null
+      if (currentVendorId && currentVendorId !== item.vendorId) {
         setPendingItem(item)
         setConfirmOpen(true)
         return { status: "confirmation-required" }
       }
 
-      const alreadyInCart = items.some((entry) => entry.item.id === item.id)
-      setItems((current) =>
-        alreadyInCart
-          ? current.map((entry) =>
-              entry.item.id === item.id
-                ? {
-                    ...entry,
-                    quantity: Math.min(entry.quantity + 1, MAX_QUANTITY),
-                  }
-                : entry
-            )
-          : [...current, { item, quantity: 1 }]
-      )
-      toast.success(alreadyInCart ? "Quantity updated" : "Added to cart", {
+      const existing = currentItems.find((entry) => entry.item.id === item.id)
+      const next = existing
+        ? currentItems.map((entry) =>
+            entry.item.id === item.id
+              ? {
+                  ...entry,
+                  quantity: Math.min(entry.quantity + 1, MAX_QUANTITY),
+                }
+              : entry
+          )
+        : [...currentItems, { item, quantity: 1 }]
+
+      itemsRef.current = next
+      setItems(next)
+      toast.success(existing ? "Quantity updated" : "Added to cart", {
         description: item.name,
       })
       return { status: "added", replaced: false }
     },
-    [items, vendorId]
+    []
   )
 
   const increaseQuantity = useCallback((itemId: string) => {
-    setItems((current) =>
-      current.map((entry) =>
-        entry.item.id === itemId
-          ? {
-              ...entry,
-              quantity: Math.min(entry.quantity + 1, MAX_QUANTITY),
-            }
-          : entry
-      )
+    const next = itemsRef.current.map((entry) =>
+      entry.item.id === itemId
+        ? {
+            ...entry,
+            quantity: Math.min(entry.quantity + 1, MAX_QUANTITY),
+          }
+        : entry
     )
+    itemsRef.current = next
+    setItems(next)
   }, [])
 
   const decreaseQuantity = useCallback((itemId: string) => {
-    setItems((current) =>
-      current.map((entry) =>
-        entry.item.id === itemId && entry.quantity > 1
-          ? { ...entry, quantity: entry.quantity - 1 }
-          : entry
-      )
+    const next = itemsRef.current.map((entry) =>
+      entry.item.id === itemId && entry.quantity > 1
+        ? { ...entry, quantity: entry.quantity - 1 }
+        : entry
     )
+    itemsRef.current = next
+    setItems(next)
   }, [])
 
   const removeItem = useCallback((itemId: string) => {
-    setItems((current) => current.filter((entry) => entry.item.id !== itemId))
+    const next = itemsRef.current.filter((entry) => entry.item.id !== itemId)
+    itemsRef.current = next
+    setItems(next)
   }, [])
 
-  const clearCart = useCallback(() => setItems([]), [])
+  const clearCart = resetCart
 
   const cancelReplace = useCallback(() => {
     setConfirmOpen(false)
@@ -139,14 +177,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const confirmReplace = useCallback(() => {
-    if (!pendingItem) return
-    setItems([{ item: pendingItem, quantity: 1 }])
+    if (!pendingItem || isMenuItemUnavailable(pendingItem)) {
+      cancelReplace()
+      return
+    }
+    const next: CartItem[] = [{ item: pendingItem, quantity: 1 }]
+    itemsRef.current = next
+    setItems(next)
     setPendingItem(null)
     setConfirmOpen(false)
     toast.success("Cart replaced", {
       description: `Your cart now holds items from ${vendorLabel(pendingItem)} only.`,
     })
-  }, [pendingItem])
+  }, [cancelReplace, pendingItem])
 
   const value = useMemo<CartContextValue>(
     () => ({

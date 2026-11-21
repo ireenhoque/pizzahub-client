@@ -17,6 +17,8 @@ const badgeVariants = cva(
           "bg-success/10 text-success focus-visible:ring-success/20 dark:bg-success/20 dark:focus-visible:ring-success/40 [a]:hover:bg-success/20",
         pending:
           "bg-accent/15 text-accent-foreground focus-visible:ring-accent/30 dark:bg-accent/25 [a]:hover:bg-accent/25",
+        premium:
+          "bg-accent/15 text-accent-foreground ring-1 ring-accent/40 focus-visible:ring-accent/40 dark:bg-accent/25 [a]:hover:bg-accent/25",
         outline:
           "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
         ghost:
