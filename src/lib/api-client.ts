@@ -108,11 +108,9 @@ export async function apiFetch<T>(
         "TimeoutError"
       )
     }
-    throw new ApiError(
-      cause instanceof Error ? cause.message : "Network request failed",
-      0,
-      "NetworkError"
-    )
+    // Fetch errors can include URLs or transport details. Keep the client
+    // message generic so configuration values are never surfaced in the UI.
+    throw new ApiError("Network request failed", 0, "NetworkError")
   }
 
   if (!response.ok) {

@@ -1,47 +1,60 @@
 // Safe environment access — every variable is read, validated, and typed
-// here, once. Only NEXT_PUBLIC_* variables are used (they are inlined at
-// build time and safe in the browser); server-only secrets must never take
-// the NEXT_PUBLIC_ prefix. Add real values to `.env.local` (see .env.example).
+// here, once. Only NEXT_PUBLIC_* variables are used in browser code (they are
+// inlined at build time); server-only secrets must never take that prefix.
+// Add real values to `.env.local` (see .env.example).
 
-function readUrl(name: string, value: string | undefined, fallback: string) {
+const isProduction = process.env.NODE_ENV === "production"
+
+function readPublicUrl(
+  name: string,
+  value: string | undefined,
+  developmentFallback: string
+): string {
   const raw = value?.trim()
 
   if (!raw) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn(
-        `[env] ${name} is not set — using fallback "${fallback}". ` +
-          `Copy .env.example to .env.local and fill it in.`
-      )
+    if (isProduction) {
+      throw new Error(`${name} is required in production`)
     }
-    return fallback
+    console.warn(
+      `[env] ${name} is not set — using the local development default.`
+    )
+    return developmentFallback
   }
 
   try {
-    return new URL(raw).toString().replace(/\/+$/, "")
-  } catch {
-    if (process.env.NODE_ENV === "development") {
-      console.warn(
-        `[env] ${name} ("${raw}") is not a valid URL — using fallback "${fallback}".`
-      )
+    const url = new URL(raw)
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      throw new Error("unsupported protocol")
     }
-    return fallback
+    return url.toString().replace(/\/+$/, "")
+  } catch {
+    if (isProduction) {
+      throw new Error(`${name} must be a valid absolute URL in production`)
+    }
+    // Never print the raw value: a malformed URL may contain credentials.
+    console.warn(
+      `[env] ${name} is not a valid absolute URL — using the local development default.`
+    )
+    return developmentFallback
   }
 }
 
 export const env = Object.freeze({
-  /** PizzaHub API base — matches PORT in pizzahub-server/.env */
-  apiBaseUrl: readUrl(
+  /** PizzaHub API base — must be browser-reachable and include `/api`. */
+  apiBaseUrl: readPublicUrl(
     "NEXT_PUBLIC_API_BASE_URL",
     process.env.NEXT_PUBLIC_API_BASE_URL,
     "http://localhost:5000/api"
   ),
   /** Canonical public origin of this app (metadata, absolute links). */
-  siteUrl: readUrl(
+  siteUrl: readPublicUrl(
     "NEXT_PUBLIC_SITE_URL",
     process.env.NEXT_PUBLIC_SITE_URL,
     "http://localhost:3000"
   ),
   isDevelopment: process.env.NODE_ENV === "development",
+  isProduction,
 })
 
 /** Build an absolute URL from the configured site origin. */

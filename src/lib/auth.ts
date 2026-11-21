@@ -35,6 +35,55 @@ function requireEnv(name: string): string {
   return value
 }
 
+const REQUIRED_PRODUCTION_AUTH_ENV = [
+  "BETTER_AUTH_SECRET",
+  "BETTER_AUTH_URL",
+  "MONGODB_URI",
+  "DB_NAME",
+  "JWT_ISSUER",
+  "JWT_AUDIENCE",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
+] as const
+
+function requireHttpOrigin(name: string): string {
+  const value = requireEnv(name)
+
+  try {
+    const url = new URL(value)
+    if (
+      (url.protocol !== "http:" && url.protocol !== "https:") ||
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash ||
+      url.username ||
+      url.password
+    ) {
+      throw new Error("invalid origin")
+    }
+    return url.origin
+  } catch {
+    // Do not include the value: MONGODB_URI and secrets must never be echoed.
+    throw new Error(`${name} must be a valid absolute origin`)
+  }
+}
+
+function assertProductionAuthEnv(): void {
+  if (process.env.NODE_ENV !== "production") return
+
+  for (const name of REQUIRED_PRODUCTION_AUTH_ENV) requireEnv(name)
+
+  const baseUrl = requireHttpOrigin("BETTER_AUTH_URL")
+  const issuer = requireHttpOrigin("JWT_ISSUER")
+  const audience = requireHttpOrigin("JWT_AUDIENCE")
+
+  if (issuer !== baseUrl || audience !== baseUrl) {
+    throw new Error(
+      "JWT_ISSUER and JWT_AUDIENCE must exactly match BETTER_AUTH_URL in production"
+    )
+  }
+}
+
 function getMongoClient(): MongoClient {
   authGlobal.__pizzahubMongoClient ??= new MongoClient(
     requireEnv("MONGODB_URI")
@@ -43,6 +92,8 @@ function getMongoClient(): MongoClient {
 }
 
 async function createAuth() {
+  assertProductionAuthEnv()
+
   const client = getMongoClient()
   await client.connect()
 
