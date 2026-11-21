@@ -1,5 +1,6 @@
 "use client"
 
+import { useQueryClient } from "@tanstack/react-query"
 import {
   createContext,
   useCallback,
@@ -82,7 +83,9 @@ type AuthProviderProps = {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const { data: session, isPending } = authClient.useSession()
+  const queryClient = useQueryClient()
   const tokenRef = useRef<string | null>(null)
+  const previousUserIdRef = useRef<string | null>(null)
   const [tokenStatus, setTokenStatus] = useState<
     "idle" | "loading" | "ready" | "error"
   >("idle")
@@ -102,11 +105,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return result.data.token
   }, [])
 
+  const sessionUserId = session?.user?.id ?? null
+
+  // Drops every cached query and mutation, including in-flight requests, so
+  // data tied to the previous identity cannot survive a logout or switch.
+  const clearUserData = useCallback(() => {
+    queryClient.clear()
+  }, [queryClient])
+
   const signOut = useCallback(async (): Promise<void> => {
     tokenRef.current = null
     setTokenStatus("idle")
     await authClient.signOut()
-  }, [])
+    clearUserData()
+  }, [clearUserData])
 
   // Expose the current token to the API client without re-rendering on every
   // token change (the getter reads the ref).
@@ -115,7 +127,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => setAccessTokenGetter(null)
   }, [])
 
-  const sessionUserId = session?.user?.id ?? null
+  // Also clear when the session identity changes outside this tab's signOut()
+  // (e.g. Better Auth's cross-tab broadcast), covering direct account switches.
+  useEffect(() => {
+    const previousUserId = previousUserIdRef.current
+    previousUserIdRef.current = sessionUserId
+    if (previousUserId !== null && previousUserId !== sessionUserId) {
+      clearUserData()
+    }
+  }, [sessionUserId, clearUserData])
 
   // Fetch a token whenever the session changes, then refresh just before `exp`.
   useEffect(() => {

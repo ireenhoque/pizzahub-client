@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { Suspense, useEffect, useRef, useState } from "react"
 import {
   ArrowUpRight,
   BadgeCheck,
@@ -129,17 +130,69 @@ function PlanCard({
   )
 }
 
-function VendorSubscription() {
+function VendorSubscriptionContent() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
   const subscriptionQuery = useVendorSubscription()
   const menuQuery = useVendorMenuItems(ACTIVE_ITEMS_QUERY)
   const checkoutMutation = useStartVendorSubscription()
   const cancelMutation = useCancelVendorSubscription()
   const [cancelOpen, setCancelOpen] = useState(false)
   const [redirectError, setRedirectError] = useState<string | null>(null)
+  const [isRefreshingAfterCheckout, setIsRefreshingAfterCheckout] =
+    useState(false)
+  const handledCheckoutRef = useRef<string | null>(null)
+
+  const checkoutQuery = searchParams.toString()
+  const checkoutResult = searchParams.get("checkout")
+
+  useEffect(() => {
+    if (!checkoutResult) {
+      handledCheckoutRef.current = null
+      return
+    }
+    if (checkoutResult !== "success" && checkoutResult !== "cancel") return
+    if (handledCheckoutRef.current === checkoutResult) return
+    handledCheckoutRef.current = checkoutResult
+
+    const params = new URLSearchParams(checkoutQuery)
+    params.delete("checkout")
+    const query = params.toString()
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+
+    if (checkoutResult === "cancel") {
+      toast.info("Checkout cancelled. Your subscription was not changed.")
+      return
+    }
+
+    void (async () => {
+      setIsRefreshingAfterCheckout(true)
+      try {
+        const result = await subscriptionQuery.refetch()
+        if (result.isError) {
+          toast.error(
+            "Checkout completed, but the subscription status could not be refreshed."
+          )
+          return
+        }
+        toast.success(
+          "Checkout completed. Subscription status has been refreshed."
+        )
+      } catch {
+        toast.error(
+          "Checkout completed, but the subscription status could not be refreshed."
+        )
+      } finally {
+        setIsRefreshingAfterCheckout(false)
+      }
+    })()
+  }, [checkoutQuery, checkoutResult, pathname, router, subscriptionQuery])
 
   const queries = [subscriptionQuery, menuQuery]
   const failedQueries = queries.filter((query) => query.isError)
-  const isLoading = queries.some((query) => query.isPending)
+  const isLoading =
+    queries.some((query) => query.isPending) || isRefreshingAfterCheckout
 
   const subscription = subscriptionQuery.data?.data.subscription
   const plan = subscription?.plan
@@ -489,6 +542,14 @@ function VendorSubscription() {
         </SheetContent>
       </Sheet>
     </PageContainer>
+  )
+}
+
+function VendorSubscription() {
+  return (
+    <Suspense fallback={<SubscriptionSkeleton />}>
+      <VendorSubscriptionContent />
+    </Suspense>
   )
 }
 
