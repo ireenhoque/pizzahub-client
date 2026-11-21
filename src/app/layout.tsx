@@ -4,6 +4,7 @@ import { Inter, Manrope } from "next/font/google"
 import "./globals.css"
 
 import { Providers } from "@/components/providers"
+import { env } from "@/lib/env"
 import { cn } from "@/lib/utils"
 
 const inter = Inter({
@@ -19,6 +20,7 @@ const manrope = Manrope({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(env.siteUrl),
   title: {
     default: "PizzaHub — premium neighborhood pizza marketplace",
     template: "%s | PizzaHub",
